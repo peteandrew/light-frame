@@ -2,11 +2,12 @@
 #include <driver/gpio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include "frame_base.h"
 
 #include "esp32_digital_led_lib.h"
 
-extern const int LED_GPIO;
-extern const int NUM_PIXELS;
+#define LED_GPIO 16
+
 
 static strand_t STRANDS[] = {
     {
@@ -106,20 +107,3 @@ void leds_update()
     digitalLeds_updatePixels(strand);
 }
 
-void row_fill(float hue, float sat, float value, float hueChange, int pixelDelay)
-{
-    strand_t * strand = &STRANDS[0];
-    pixelColor_t colour = pixel_from_hsv(hue, sat, value);
-    
-    for (int px=0; px < NUM_PIXELS; px++) {
-        strand->pixels[px] = colour;
-        digitalLeds_updatePixels(strand);
-        
-        if (hueChange > 0) {
-            hue += hueChange;
-            colour = pixel_from_hsv(hue, sat, value);
-        }
-
-        vTaskDelay(pixelDelay / portTICK_PERIOD_MS);
-    }
-}

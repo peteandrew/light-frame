@@ -1,18 +1,9 @@
 #include <stdio.h>
 #include <esp_log.h>
 #include <cJSON.h>
+#include "frame_base.h"
 
 static const char *TAG = "scene fill";
-
-extern const int NUM_PIXELS;
-extern const int PIXELS_PER_ROW;
-extern float hue;
-extern float sat;
-extern float value;
-
-void leds_set_pixel(int pixel, float hue, float sat, float value);
-void leds_update();
-void updateColour();
 
 static uint32_t fill_scene_lastMillis = 0;
 static uint8_t fill_scene_pixel = 0;
@@ -29,6 +20,11 @@ static uint16_t fill_scene_fill_pause_millis = 200;
 static uint16_t fill_scene_clear_pixel_millis = 30;
 static uint16_t fill_scene_clear_pause_millis = 100;
 
+
+void leds_set_pixel(int pixel, float hue, float sat, float value);
+void leds_update();
+
+
 static void init_fill_pixel()
 {
     if (fill_scene_fill_direction) {
@@ -37,6 +33,7 @@ static void init_fill_pixel()
         fill_scene_pixel = NUM_PIXELS - 1;
     }
 }
+
 
 static void init_clear_pixel()
 {
@@ -47,6 +44,7 @@ static void init_clear_pixel()
     }
 }
 
+
 void fill_scene_update(uint32_t currMillis)
 {
     uint32_t elapsedMillis = currMillis - fill_scene_lastMillis;
@@ -54,7 +52,13 @@ void fill_scene_update(uint32_t currMillis)
     // printf("elapsed millis %d\n", elapsedMillis);
 
     if (fill_scene_mode == 0 && elapsedMillis >= fill_scene_fill_pixel_millis) {
-        leds_set_pixel(fill_scene_pixel, hue, sat, value);
+        colourConfig baseColourConfig = getBaseColourConfig();
+        leds_set_pixel(
+            fill_scene_pixel,
+            baseColourConfig.hue,
+            baseColourConfig.sat,
+            baseColourConfig.value
+        );
         leds_update();
         
         if (fill_scene_fill_direction) {
@@ -64,14 +68,14 @@ void fill_scene_update(uint32_t currMillis)
         }
         
         if (fill_scene_colour_mode == 1) {
-            updateColour();
+            updateBaseColour();
         } else if (fill_scene_colour_mode == 2) {
             // If fill direction is down we change colour when we are on the first pixel of the next row
             if (fill_scene_fill_direction && fill_scene_pixel % PIXELS_PER_ROW == 0) {
-                updateColour();
+                updateBaseColour();
             // If fill direction is up we change colour when we are on the last pixel of the next row
             } else if (!fill_scene_fill_direction && (fill_scene_pixel + 1) % PIXELS_PER_ROW == 0) {
-                updateColour();
+                updateBaseColour();
             }
         }
 
@@ -85,13 +89,13 @@ void fill_scene_update(uint32_t currMillis)
         if (fillDone) {
             fill_scene_mode++;
             if (fill_scene_colour_mode == 0) {
-                updateColour();
+                updateBaseColour();
             }
         }
 
         fill_scene_lastMillis = currMillis;
     } else if (fill_scene_mode == 1 && elapsedMillis >= fill_scene_fill_pause_millis) {
-        if (fill_scene_clear_mode == 0) {
+        if (!fill_scene_clear_mode) {
             fill_scene_mode = 0;
             init_fill_pixel();
         } else {
@@ -149,16 +153,16 @@ void fill_scene_update_config(cJSON *json)
         }
     }
     const cJSON *clearModeJson = cJSON_GetObjectItem(json, "clearMode");
-    if (cJSON_IsNumber(clearModeJson)) {
-        fill_scene_clear_mode = (bool) clearModeJson->valueint;
+    if (cJSON_IsBool(clearModeJson)) {
+        fill_scene_clear_mode = cJSON_IsTrue(clearModeJson);
     }
     const cJSON *fillDirectionJson = cJSON_GetObjectItem(json, "fillDirection");
-    if (cJSON_IsNumber(fillDirectionJson)) {
-        fill_scene_fill_direction = (bool) fillDirectionJson->valueint;
+    if (cJSON_IsBool(fillDirectionJson)) {
+        fill_scene_fill_direction = cJSON_IsTrue(fillDirectionJson);
     }
     const cJSON *clearDirectionJson = cJSON_GetObjectItem(json, "clearDirection");
-    if (cJSON_IsNumber(clearDirectionJson)) {
-        fill_scene_clear_direction = (bool) clearDirectionJson->valueint;
+    if (cJSON_IsBool(clearDirectionJson)) {
+        fill_scene_clear_direction = cJSON_IsTrue(clearDirectionJson);
     }
     const cJSON *fillPixelMillisJson = cJSON_GetObjectItem(json, "fillPixelMillis");
     if (cJSON_IsNumber(fillPixelMillisJson)) {

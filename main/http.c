@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include <string.h>
 #include "cJSON.h"
+#include "frame_base.h"
 
 static const char *TAG = "light frame http";
 
@@ -82,7 +83,7 @@ static esp_err_t setColourConfigHandler(httpd_req_t *req)
     postDataBuffer[total_len] = '\0';
 
     cJSON *json = cJSON_Parse(postDataBuffer);
-    setColourConfig(json);
+    setBaseColourConfig(json);
     cJSON_Delete(json);
 
     httpd_resp_send_chunk(req, NULL, 0);
