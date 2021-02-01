@@ -5,8 +5,6 @@
 
 #define LENGTH 5
 
-static uint32_t lastMillis = 0;
-
 typedef struct segment {
     uint8_t col;
     uint8_t row;
@@ -14,21 +12,64 @@ typedef struct segment {
     float sat;
     float value;
 } segment;
+typedef enum {UP, RIGHT, DOWN, LEFT} direction;
 
 static segment segments[LENGTH];
+static uint8_t movesBeforeDirChange = 2;
+static uint8_t millisBeforeMove = 100;
 static uint8_t movesSinceDirChange = 0;
-static uint8_t dir = 2;
+static direction currentDirection = DOWN;
 
+static uint32_t lastMillis = 0;
 
 void leds_set_pixel(int pixel, float hue, float sat, float value);
 void leds_clear();
 void leds_update();
 
+static direction newDirection(direction currentDir)
+{
+    // There are only two possible new directions for each current direction
+    // current dir: up; new dirs: left, right
+    // current dir: right; new dirs: up, down
+    // current dir: down; new dirs: right, left
+    // current dir: left: down, up
+
+    uint8_t dirChoice = esp_random() & 0x01;
+    if (currentDir == UP) {
+        if (dirChoice == 1) {
+            return LEFT;
+        } else {
+            return RIGHT;
+        }
+    } else if (currentDir == RIGHT) {
+        if (dirChoice == 1) {
+            return UP;
+        } else {
+            return DOWN;
+        }
+    } else if (currentDir == DOWN) {
+        if (dirChoice == 1) {
+            return RIGHT;
+        } else {
+            return LEFT;
+        }
+    } else if (currentDir == LEFT) {
+        if (dirChoice == 1) {
+            return DOWN;
+        } else {
+            return UP;
+        }
+    }
+
+    // Default to DOWN, this shouldn't be reached
+    return DOWN;
+}
+
 void snake_scene_update(uint32_t currMillis)
 {
     uint32_t elapsedMillis = currMillis - lastMillis;
 
-    if (elapsedMillis >= 200) {
+    if (elapsedMillis >= millisBeforeMove) {
         leds_clear();
 
         for (uint8_t i = 0; i < LENGTH; i++) {
@@ -41,81 +82,46 @@ void snake_scene_update(uint32_t currMillis)
         }
         leds_update();
 
-        if (++movesSinceDirChange > 5) {
-            // There are only two possible new directions for each current direction
-            // current dir: up; new dirs: left, right
-            // current dir: right; new dirs: up, down
-            // current dir: down; new dirs: right, left
-            // current dir: left: down, up
-            uint8_t newDir = esp_random() & 0x01;
-            if (dir == 0) {
-                // Up
-                if (newDir == 1) {
-                    dir = 3;
-                } else {
-                    dir = 1;
-                }
-            } else if (dir == 1) {
-                // Right
-                if (newDir == 1) {
-                    dir = 2;
-                } else {
-                    dir = 0;
-                }
-            } else if (dir == 2) {
-                // Down
-                if (newDir == 1) {
-                    dir = 1;
-                } else {
-                    dir = 3;
-                }
-            } else if (dir == 3) {
-                // Left
-                if (newDir == 1) {
-                    dir = 2;
-                } else {
-                    dir = 0;
-                }
-            }
+        if (++movesSinceDirChange > movesBeforeDirChange) {
+            currentDirection = newDirection(currentDirection);
             movesSinceDirChange = 0;
         }
 
+        // Move tail segments to preceding segment position
         for (uint8_t i = LENGTH - 1; i > 0; i--) {
             segments[i].col = segments[i - 1].col;
             segments[i].row = segments[i - 1].row;
         }
 
+        // Attempt to move head
+        // If move hits side find new direction
         bool moved = false;
         while (!moved) {
-            if (dir == 0) {
-                // Up
+            if (currentDirection == UP) {
                 if (--segments[0].row == 255) {
                     segments[0].row = 0;
-                    dir = 1;
+                    currentDirection = newDirection(currentDirection);
                     continue;
                 }
                 moved = true;
-            } else if (dir == 1) {
-                // Right
+            } else if (currentDirection == RIGHT) {
                 if (++segments[0].col == PIXELS_PER_ROW) {
                     segments[0].col = PIXELS_PER_ROW - 1;
-                    dir = 2;
+                    currentDirection = newDirection(currentDirection);
                     continue;
                 }
                 moved = true;
-            } else if (dir == 2) {
-                // Down
+            } else if (currentDirection == DOWN) {
                 if (++segments[0].row == NUM_ROWS) {
                     segments[0].row = NUM_ROWS - 1;
-                    dir = 3;
+                    currentDirection = newDirection(currentDirection);
                     continue;
                 }
                 moved = true;
-            } else if (dir == 3) {
-                // Left
+            } else if (currentDirection == LEFT) {
                 if (--segments[0].col == 255) {
                     segments[0].col = 0;
-                    dir = 0;
+                    currentDirection = newDirection(currentDirection);
                     continue;
                 }
                 moved = true;
