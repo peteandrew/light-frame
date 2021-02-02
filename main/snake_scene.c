@@ -26,38 +26,128 @@ void leds_set_pixel(int pixel, float hue, float sat, float value);
 void leds_clear();
 void leds_update();
 
-static direction newDirection(direction currentDir)
+static direction newDirection(direction currentDir, uint8_t col, uint8_t row)
 {
-    // There are only two possible new directions for each current direction
-    // current dir: up; new dirs: left, right
-    // current dir: right; new dirs: up, down
-    // current dir: down; new dirs: right, left
-    // current dir: left: down, up
-
     uint8_t dirChoice = esp_random() & 0x01;
-    if (currentDir == UP) {
-        if (dirChoice == 1) {
-            return LEFT;
+    if (currentDirection == UP) {
+        if (col == 0) {
+            if (row == 0) {
+                // Top left corner, can only go right
+                return RIGHT;
+            }
+            // Left hand column, can only go right or continue up
+            if (dirChoice == 1) {
+                return RIGHT;
+            } else {
+                return UP;
+            }
+        } else if (col == PIXELS_PER_ROW - 1) {
+            if (row == 0) {
+                // Top right corner, can only go left
+                return LEFT;
+            }
+            // Right hand column, can only go left or continue up
+            if (dirChoice == 1) {
+                return LEFT;
+            } else {
+                return UP;
+            }
         } else {
-            return RIGHT;
+            if (dirChoice == 1) {
+                return LEFT;
+            } else {
+                return RIGHT;
+            }
         }
     } else if (currentDir == RIGHT) {
-        if (dirChoice == 1) {
-            return UP;
+        if (row == 0) {
+            if (col == PIXELS_PER_ROW - 1) {
+                // Top right corner, can only go down
+                return DOWN;
+            }
+            // Top row, can only go down or continue right
+            if (dirChoice == 1) {
+                return DOWN;
+            } else {
+                return RIGHT;
+            }
+        } else if (row == NUM_ROWS - 1) {
+            if (col == PIXELS_PER_ROW - 1) {
+                // Bottom right corner, can only go up
+                return UP;
+            }
+            // Bottom row, can only go up or continue right
+            if (dirChoice == 1) {
+                return UP;
+            } else {
+                return RIGHT;
+            }
         } else {
-            return DOWN;
+            if (dirChoice == 1) {
+                return UP;
+            } else {
+                return DOWN;
+            }
         }
     } else if (currentDir == DOWN) {
-        if (dirChoice == 1) {
-            return RIGHT;
+        if (col == 0) {
+            if (row == NUM_ROWS - 1) {
+                // Bottom left corner, can only go right
+                return RIGHT;
+            }
+            // Left hand column, can only go right or continue down
+            if (dirChoice == 1) {
+                return RIGHT;
+            } else {
+                return DOWN;
+            }
+        } else if (col == PIXELS_PER_ROW - 1) {
+            if (row == NUM_ROWS - 1) {
+                // Bottom right corner, can only go left
+                return LEFT;
+            }
+            // Right hand column, can only go left or continue down
+            if (dirChoice == 1) {
+                return LEFT;
+            } else {
+                return DOWN;
+            }
         } else {
-            return LEFT;
+            if (dirChoice == 1) {
+                return RIGHT;
+            } else {
+                return LEFT;
+            }
         }
     } else if (currentDir == LEFT) {
-        if (dirChoice == 1) {
-            return DOWN;
+        if (row == 0) {
+            if (col == 0) {
+                // Top left corner, can only go down
+                return DOWN;
+            }
+            // Top row, can only go down or continue left
+            if (dirChoice == 1) {
+                return DOWN;
+            } else {
+                return LEFT;
+            }
+        } else if (row == NUM_ROWS - 1) {
+            if (col == 0) {
+                // Bottom left corner, can only go up
+                return UP;
+            }
+            // Bottom row, can only go up or continue left
+            if (dirChoice == 1) {
+                return UP;
+            } else {
+                return LEFT;
+            }
         } else {
-            return UP;
+            if (dirChoice == 1) {
+                return DOWN;
+            } else {
+                return UP;
+            }
         }
     }
 
@@ -83,7 +173,7 @@ void snake_scene_update(uint32_t currMillis)
         leds_update();
 
         if (++movesSinceDirChange > movesBeforeDirChange) {
-            currentDirection = newDirection(currentDirection);
+            currentDirection = newDirection(currentDirection, segments[0].col, segments[0].row);
             movesSinceDirChange = 0;
         }
 
@@ -100,28 +190,32 @@ void snake_scene_update(uint32_t currMillis)
             if (currentDirection == UP) {
                 if (--segments[0].row == 255) {
                     segments[0].row = 0;
-                    currentDirection = newDirection(currentDirection);
+                    currentDirection = newDirection(currentDirection, segments[0].col, segments[0].row);
+                    movesSinceDirChange = 0;
                     continue;
                 }
                 moved = true;
             } else if (currentDirection == RIGHT) {
                 if (++segments[0].col == PIXELS_PER_ROW) {
                     segments[0].col = PIXELS_PER_ROW - 1;
-                    currentDirection = newDirection(currentDirection);
+                    currentDirection = newDirection(currentDirection, segments[0].col, segments[0].row);
+                    movesSinceDirChange = 0;
                     continue;
                 }
                 moved = true;
             } else if (currentDirection == DOWN) {
                 if (++segments[0].row == NUM_ROWS) {
                     segments[0].row = NUM_ROWS - 1;
-                    currentDirection = newDirection(currentDirection);
+                    currentDirection = newDirection(currentDirection, segments[0].col, segments[0].row);
+                    movesSinceDirChange = 0;
                     continue;
                 }
                 moved = true;
             } else if (currentDirection == LEFT) {
                 if (--segments[0].col == 255) {
                     segments[0].col = 0;
-                    currentDirection = newDirection(currentDirection);
+                    currentDirection = newDirection(currentDirection, segments[0].col, segments[0].row);
+                    movesSinceDirChange = 0;
                     continue;
                 }
                 moved = true;
