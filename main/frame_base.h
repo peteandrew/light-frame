@@ -9,18 +9,25 @@
 
 #define HSV_MAX_VALUE 1
 
-typedef struct colourConfig {
+typedef struct hsvColour {
     float hue;
     float sat;
     float value;
+} hsvColour;
+
+typedef struct hsvColourChangeConfig {
     float hueChange;
     float valueChange;
     float maxValue;
-} colourConfig;
+} hsvColourChangeConfig;
+
+typedef enum {SCENE_FILL, SCENE_SNAKE} scene;
 
 uint8_t pixelIdx(uint8_t col, uint8_t row);
-void updateBaseColour();
-void setBaseColourConfig(cJSON *json);
-colourConfig getBaseColourConfig();
+void setSceneConfig(char *scene, cJSON *json);
+void setCurrentScene(char *newScene);
+void currentSceneUpdate(uint32_t millis);
+void currentSceneResetMillis(uint32_t millis);
+void currentSceneStop();
 
 #endif /* FRAME_BASE_H */

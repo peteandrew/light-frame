@@ -19,6 +19,16 @@ static uint8_t movesBeforeDirChange = 2;
 static uint8_t millisBeforeMove = 100;
 static uint8_t movesSinceDirChange = 0;
 static direction currentDirection = DOWN;
+static hsvColour colour = {
+    .hue = 0.01,
+    .sat = 1,
+    .value = 0.07
+};
+static hsvColourChangeConfig colourChange = {
+    .hueChange = 0.01,
+    .valueChange = 0,
+    .maxValue = HSV_MAX_VALUE
+};
 
 static uint32_t lastMillis = 0;
 
@@ -222,11 +232,10 @@ void snake_scene_update(uint32_t currMillis)
             }
         }
 
-        colourConfig baseColourConfig = getBaseColourConfig();
         for (uint8_t i = 0; i < LENGTH; i++) {
-            segments[i].hue += baseColourConfig.hueChange;
-            segments[i].value += baseColourConfig.valueChange;
-            if (segments[i].value > baseColourConfig.maxValue) {
+            segments[i].hue += colourChange.hueChange;
+            segments[i].value += colourChange.valueChange;
+            if (segments[i].value > colourChange.maxValue) {
                 segments[i].value = 0;
             }
         }
@@ -240,12 +249,11 @@ void snake_scene_stop() {}
 void snake_scene_reset_millis(uint32_t currMillis)
 {
     lastMillis = currMillis;
-    colourConfig baseColourConfig = getBaseColourConfig();
     for (uint8_t i = 0; i < LENGTH; i++) {
         segments[i].col = 0;
         segments[i].row = 0;
-        segments[i].hue = baseColourConfig.hue;
-        segments[i].sat = baseColourConfig.sat;
-        segments[i].value = baseColourConfig.value;
+        segments[i].hue = colour.hue;
+        segments[i].sat = colour.sat;
+        segments[i].value = colour.value;
     }
 }

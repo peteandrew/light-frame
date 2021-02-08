@@ -19,6 +19,16 @@ static uint16_t fill_scene_fill_pixel_millis = 50;
 static uint16_t fill_scene_fill_pause_millis = 200;
 static uint16_t fill_scene_clear_pixel_millis = 30;
 static uint16_t fill_scene_clear_pause_millis = 100;
+static hsvColour colour = {
+    .hue = 0.01,
+    .sat = 1,
+    .value = 0.07
+};
+static hsvColourChangeConfig colourChange = {
+    .hueChange = 0.01,
+    .valueChange = 0,
+    .maxValue = HSV_MAX_VALUE
+};
 
 
 void leds_set_pixel(int pixel, float hue, float sat, float value);
@@ -45,19 +55,26 @@ static void init_clear_pixel()
 }
 
 
+static void colour_update()
+{
+    colour.hue += colourChange.hueChange;
+    colour.value += colourChange.valueChange;
+    if (colour.value > colourChange.maxValue) {
+        colour.value = 0;
+    }
+}
+
+
 void fill_scene_update(uint32_t currMillis)
 {
     uint32_t elapsedMillis = currMillis - fill_scene_lastMillis;
-    // printf("mode %d\n", mode);
-    // printf("elapsed millis %d\n", elapsedMillis);
 
     if (fill_scene_mode == 0 && elapsedMillis >= fill_scene_fill_pixel_millis) {
-        colourConfig baseColourConfig = getBaseColourConfig();
         leds_set_pixel(
             fill_scene_pixel,
-            baseColourConfig.hue,
-            baseColourConfig.sat,
-            baseColourConfig.value
+            colour.hue,
+            colour.sat,
+            colour.value
         );
         leds_update();
         
@@ -68,14 +85,14 @@ void fill_scene_update(uint32_t currMillis)
         }
         
         if (fill_scene_colour_mode == 1) {
-            updateBaseColour();
+            colour_update();
         } else if (fill_scene_colour_mode == 2) {
             // If fill direction is down we change colour when we are on the first pixel of the next row
             if (fill_scene_fill_direction && fill_scene_pixel % PIXELS_PER_ROW == 0) {
-                updateBaseColour();
+                colour_update();
             // If fill direction is up we change colour when we are on the last pixel of the next row
             } else if (!fill_scene_fill_direction && (fill_scene_pixel + 1) % PIXELS_PER_ROW == 0) {
-                updateBaseColour();
+                colour_update();
             }
         }
 
@@ -89,7 +106,7 @@ void fill_scene_update(uint32_t currMillis)
         if (fillDone) {
             fill_scene_mode++;
             if (fill_scene_colour_mode == 0) {
-                updateBaseColour();
+                colour_update();
             }
         }
 
@@ -181,4 +198,34 @@ void fill_scene_update_config(cJSON *json)
         fill_scene_clear_pause_millis = (uint16_t) clearPauseMillisJson->valueint;
     }
     ESP_LOGI(TAG, "Updated config: colour mode = %d, clear mode = %d, fill direction = %d, clear direction = %d, fill pixel millis = %d, fill pause millis = %d, clear pixel millis = %d, clear pause millis = %d\n", fill_scene_colour_mode, fill_scene_clear_mode, fill_scene_fill_direction, fill_scene_clear_direction, fill_scene_fill_pixel_millis, fill_scene_fill_pause_millis, fill_scene_clear_pixel_millis, fill_scene_clear_pause_millis);
+
+    const cJSON *hueJson = cJSON_GetObjectItem(json, "hue");
+    if (cJSON_IsNumber(hueJson)) {
+        colour.hue = (float) hueJson->valuedouble;
+    }
+    const cJSON *satJson = cJSON_GetObjectItem(json, "sat");
+    if (cJSON_IsNumber(satJson)) {
+        colour.sat = (float) satJson->valuedouble;
+    }
+    const cJSON *valueJson = cJSON_GetObjectItem(json, "value");
+    if (cJSON_IsNumber(valueJson)) {
+        colour.value = (float) valueJson->valuedouble;
+    }
+    const cJSON *hueChangeJson = cJSON_GetObjectItem(json, "hueChange");
+    if (cJSON_IsNumber(hueChangeJson)) {
+        colourChange.hueChange = (float) hueChangeJson->valuedouble;
+    }
+    const cJSON *valueChangeJson = cJSON_GetObjectItem(json, "valueChange");
+    if (cJSON_IsNumber(valueChangeJson)) {
+        colourChange.valueChange = (float) valueChangeJson->valuedouble;
+    }
+    const cJSON *maxValueJson = cJSON_GetObjectItem(json, "maxValue");
+    if (cJSON_IsNumber(maxValueJson)) {
+        colourChange.maxValue = (float) maxValueJson->valuedouble;
+        if (colourChange.maxValue > HSV_MAX_VALUE) {
+            colourChange.maxValue = HSV_MAX_VALUE;
+        }
+    }
+
+    ESP_LOGI(TAG, "Colour config: hue = %f, sat = %f, value = %f, hue change = %f, value change = %f, max value = %f", colour.hue, colour.sat, colour.value, colourChange.hueChange, colourChange.valueChange, colourChange.maxValue);
 }
