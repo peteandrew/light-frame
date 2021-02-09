@@ -22,7 +22,7 @@ volatile bool tick = false;
 
 void wifi_initialise();
 void leds_initialise();
-void leds_clear();
+void leds_clear(bool updateLeds);
 
 void tg_timer_isr()
 {
@@ -59,14 +59,13 @@ void resume()
 {
     timer_set_counter_value(TIMER_GROUP_0, TIMER_1, 0);
     timer_start(TIMER_GROUP_0, TIMER_1);
-    currentSceneResetMillis(millis);
 }
 
 void stop()
 {
     pause();
-    leds_clear();
-    currentSceneStop();
+    leds_clear(true);
+    currentSceneInit();
 }
 
 static void leds_task(void *pvParameters) {
@@ -78,7 +77,7 @@ static void leds_task(void *pvParameters) {
     uint32_t lastSeconds = 0;
     UBaseType_t uxHighWaterMark;
 
-    currentSceneResetMillis(millis);
+    currentSceneInit();
 
     printf("LEDs task start\n");
 

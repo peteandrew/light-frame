@@ -88,12 +88,6 @@ void leds_initialise()
     digitalLeds_resetPixels(pStrand);
 }
 
-void leds_clear()
-{
-    strand_t * pStrand = &STRANDS[0];
-    digitalLeds_resetPixels(pStrand);    
-}
-
 void leds_set_pixel(int pixel, float hue, float sat, float value)
 {
     strand_t * strand = &STRANDS[0];
@@ -107,3 +101,21 @@ void leds_update()
     digitalLeds_updatePixels(strand);
 }
 
+void leds_clear(bool updateLeds)
+{
+    strand_t * strand = &STRANDS[0];
+
+    pixelColor_t colour = {
+        .r = 0,
+        .g = 0,
+        .b = 0,
+        .w = 0,
+    };
+
+    for (uint8_t i = 0; i < NUM_PIXELS; i++) {
+        strand->pixels[i] = colour;
+    }
+    if (updateLeds) {
+        leds_update();
+    }
+}

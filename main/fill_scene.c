@@ -149,15 +149,11 @@ void fill_scene_update(uint32_t currMillis)
     }
 }
 
-void fill_scene_stop()
+void fill_scene_init()
 {
     fill_scene_pixel = 0;
     fill_scene_mode = 0;
-}
-
-void fill_scene_reset_millis(uint32_t currMillis)
-{
-    fill_scene_lastMillis = currMillis;
+    fill_scene_lastMillis = 0;
 }
 
 void fill_scene_update_config(cJSON *json)

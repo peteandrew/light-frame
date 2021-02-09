@@ -64,7 +64,7 @@ static esp_err_t setSceneConfigHandler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "scene must be specified as query param");
         return ESP_FAIL;
     }
-    if (query_len > 10) {
+    if (query_len > 20) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "query string too long");
         return ESP_FAIL;
     }

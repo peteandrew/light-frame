@@ -21,13 +21,12 @@ typedef struct hsvColourChangeConfig {
     float maxValue;
 } hsvColourChangeConfig;
 
-typedef enum {SCENE_FILL, SCENE_SNAKE} scene;
+typedef enum {SCENE_FILL, SCENE_SNAKE, SCENE_BLOCKS} scene;
 
 uint8_t pixelIdx(uint8_t col, uint8_t row);
 void setSceneConfig(char *scene, cJSON *json);
 void setCurrentScene(char *newScene);
 void currentSceneUpdate(uint32_t millis);
-void currentSceneResetMillis(uint32_t millis);
-void currentSceneStop();
+void currentSceneInit();
 
 #endif /* FRAME_BASE_H */

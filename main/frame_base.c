@@ -8,13 +8,14 @@ static const char *TAG = "light frame base";
 
 
 void fill_scene_update(uint32_t currMillis);
-void fill_scene_stop();
-void fill_scene_reset_millis(uint32_t currMillis);
+void fill_scene_init();
 void fill_scene_update_config(cJSON *json);
 void snake_scene_update(uint32_t currMillis);
-void snake_scene_stop();
-void snake_scene_reset_millis(uint32_t currMillis);
-void leds_clear();
+void snake_scene_init();
+void blocks_scene_update(uint32_t currMillis);
+void blocks_scene_init();
+void blocks_scene_update_config(cJSON *json);
+void leds_clear(bool updateLeds);
 
 uint8_t pixelIdx(uint8_t col, uint8_t row)
 {
@@ -31,26 +32,34 @@ void setSceneConfig(char *scene, cJSON *json)
     {
         fill_scene_update_config(json);
     }
+    else if (strncmp(scene, "blocks", 6) == 0)
+    {
+        blocks_scene_update_config(json);
+    }
 }
 
-void setCurrentScene(char *newScene)
+void setCurrentScene(char *scene)
 {
-    if (strncmp(newScene, "fill", 4) == 0)
+    if (strncmp(scene, "fill", 4) == 0)
     {
         currentScene = SCENE_FILL;
     }
-    else if (strncmp(newScene, "snake", 5) == 0)
+    else if (strncmp(scene, "snake", 5) == 0)
     {
         currentScene = SCENE_SNAKE;
+    }
+    else if (strncmp(scene, "blocks", 6) == 0)
+    {
+        currentScene = SCENE_BLOCKS;
     }
     else
     {
         return;
     }
     
-    leds_clear();
-    currentSceneResetMillis(0);
-    ESP_LOGI(TAG, "New scene: %s", newScene); 
+    leds_clear(true);
+    currentSceneInit();
+    ESP_LOGI(TAG, "New scene: %s", scene); 
 }
 
 void currentSceneUpdate(uint32_t millis)
@@ -63,31 +72,24 @@ void currentSceneUpdate(uint32_t millis)
         case SCENE_SNAKE:
             snake_scene_update(millis);
             break;
-    }
-}
-
-void currentSceneResetMillis(uint32_t millis)
-{
-    switch (currentScene)
-    {
-        case SCENE_FILL:
-            fill_scene_reset_millis(millis);
-            break;
-        case SCENE_SNAKE:
-            snake_scene_reset_millis(millis);
+        case SCENE_BLOCKS:
+            blocks_scene_update(millis);
             break;
     }
 }
 
-void currentSceneStop()
+void currentSceneInit()
 {
     switch (currentScene)
     {
         case SCENE_FILL:
-            fill_scene_stop();
+            fill_scene_init();
             break;
         case SCENE_SNAKE:
-            snake_scene_stop();
+            snake_scene_init();
+            break;
+        case SCENE_BLOCKS:
+            blocks_scene_init();
             break;
     }
 }

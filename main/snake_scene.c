@@ -33,7 +33,7 @@ static hsvColourChangeConfig colourChange = {
 static uint32_t lastMillis = 0;
 
 void leds_set_pixel(int pixel, float hue, float sat, float value);
-void leds_clear();
+void leds_clear(bool updateLeds);
 void leds_update();
 
 static direction newDirection(direction currentDir, uint8_t col, uint8_t row)
@@ -170,7 +170,7 @@ void snake_scene_update(uint32_t currMillis)
     uint32_t elapsedMillis = currMillis - lastMillis;
 
     if (elapsedMillis >= millisBeforeMove) {
-        leds_clear();
+        leds_clear(false);
 
         for (uint8_t i = 0; i < LENGTH; i++) {
             leds_set_pixel(
@@ -244,11 +244,9 @@ void snake_scene_update(uint32_t currMillis)
     }
 }
 
-void snake_scene_stop() {}
-
-void snake_scene_reset_millis(uint32_t currMillis)
+void snake_scene_init()
 {
-    lastMillis = currMillis;
+    lastMillis = 0;
     for (uint8_t i = 0; i < LENGTH; i++) {
         segments[i].col = 0;
         segments[i].row = 0;
